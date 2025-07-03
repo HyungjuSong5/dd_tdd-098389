@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="솔루션항목">
+      <UniqueIdentifier>{35da909c-52de-4153-89cf-3fe00fe24dff}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="device_driver.cpp">
@@ -29,8 +32,12 @@
     <ClInclude Include="flash_memory_device.h">
       <Filter>소스 파일</Filter>
     </ClInclude>
+    <ClInclude Include="exception.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include=".gitignore" />
   </ItemGroup>
 </Project>
