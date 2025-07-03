@@ -1,3 +1,4 @@
+#include "Application.cpp"
 #include "device_driver.h"
 #include "exception.h"
 #include "gmock/gmock.h"
@@ -15,8 +16,9 @@ class DeviceDriverFixture : public Test {
     int result = driver.read(address);
     EXPECT_EQ(result, expected);
   }
-  MockFlashMemoryDevice mock;
+  NiceMock<MockFlashMemoryDevice> mock;
   DeviceDriver driver{&mock};
+  Application app{&driver};
   long address = 0x200;
   int expectedData = 0x46;
 };
@@ -54,6 +56,31 @@ TEST_F(DeviceDriverFixture, WRITE_PASS) {
   EXPECT_NO_THROW(driver.write(address, expectedData));
 }
 
+TEST_F(DeviceDriverFixture, APP_READ_TEST) {
+  int testValue = 0xF2;
+  EXPECT_CALL(mock, read(_)).Times(25).WillRepeatedly(Return(testValue));
+
+  app.readAndPrint(0x00, 0x04);
+}
+
+TEST_F(DeviceDriverFixture, APP_WRITE_TEST) {
+  int testValue = 0xAA;
+  EXPECT_CALL(mock, read(_)).Times(5).WillRepeatedly(Return(0xFF));
+  EXPECT_CALL(mock, write(_,_)).Times(5).WillRepeatedly(Return(testValue));
+  app.writeAll(testValue);
+}
+
+TEST_F(DeviceDriverFixture, APP_WRITE_TEST_FAILS_IF_MEMORY_ALREADY_WRITTEN) {
+  EXPECT_CALL(mock, read(0x00)).WillOnce(Return(0xFF));
+  EXPECT_CALL(mock, write(0x00, 0xAA)).Times(1);
+
+  EXPECT_CALL(mock, read(0x01)).WillOnce(Return(0x11));
+  EXPECT_CALL(mock, read(0x02)).WillOnce(Return(0x20));
+  EXPECT_CALL(mock, read(0x03)).WillOnce(Return(0x00));
+  EXPECT_CALL(mock, read(0x04)).WillOnce(Return(0xAA));
+
+  app.writeAll(0xAA);
+}
 int main() {
   ::testing::InitGoogleMock();
   return RUN_ALL_TESTS();
