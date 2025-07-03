@@ -1,12 +1,57 @@
 #include "device_driver.h"
+#include "exception.h"
 #include "gmock/gmock.h"
 
-TEST(DeviceDriver, ReadFromHW) {
-  // TODO : replace hardware with a Test Double
-  FlashMemoryDevice* hardware = nullptr;
-  DeviceDriver driver{hardware};
-  int data = driver.read(0xFF);
-  EXPECT_EQ(0, data);
+using namespace testing;
+class MockFlashMemoryDevice : public FlashMemoryDevice {
+ public:
+  MOCK_METHOD(unsigned char, read, (long), (override));
+  MOCK_METHOD(void, write, (long, unsigned char), (override));
+};
+
+class DeviceDriverFixture : public Test {
+ public:
+  void EXPECTED_DRIVER_READ(long address, int expected) {
+    int result = driver.read(address);
+    EXPECT_EQ(result, expected);
+  }
+  MockFlashMemoryDevice mock;
+  DeviceDriver driver{&mock};
+  long address = 0x200;
+  int expectedData = 0x46;
+};
+
+TEST_F(DeviceDriverFixture, READ_5TIMES) {
+  long address = 0xF2;
+  int expected = 0xAB;
+  EXPECT_CALL(mock, read(address)).Times(5).WillRepeatedly(Return(expected));
+
+  EXPECTED_DRIVER_READ(address, expected);
+}
+
+TEST_F(DeviceDriverFixture, READ_5TIMES_INCORRECT) {
+  EXPECT_CALL(mock, read(address))
+      .WillOnce(Return(0x11))
+      .WillOnce(Return(0x11))
+      .WillOnce(Return(0x11))
+      .WillOnce(Return(0x11))
+      .WillOnce(Return(0x22));  // failed
+
+  EXPECT_THROW(driver.read(address), ReadFailException);
+}
+
+TEST_F(DeviceDriverFixture, WRITE_FAILED_ALREADY_WRITEN) {
+  EXPECT_CALL(mock, read(address)).WillOnce(Return(0x11));
+  EXPECT_CALL(mock, write(address, expectedData)).Times(0);
+
+  EXPECT_THROW(driver.write(address, expectedData), WriteFailException);
+}
+
+TEST_F(DeviceDriverFixture, WRITE_PASS) {
+  EXPECT_CALL(mock, read(address)).WillOnce(Return(0xFF));
+  EXPECT_CALL(mock, write(address, expectedData));
+
+  EXPECT_NO_THROW(driver.write(address, expectedData));
 }
 
 int main() {
